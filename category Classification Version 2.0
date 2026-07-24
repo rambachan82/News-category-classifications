@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI News Classifier - Pro Edition</title>
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --primary-hover: #4338CA;
+            --bg-color: #F3F4F6;
+            --card-bg: #FFFFFF;
+            --text-main: #1F2937;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            height: 100%;
+            overflow-x: hidden;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+        }
+
+        /* --- Animations --- */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideInRight { from { opacity: 0; transform: translateX(50px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes pulseGlow { 0% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(79, 70, 229, 0); } 100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); } }
+        @keyframes fillBar { from { width: 0; } }
+
+        /* --- Login Screen --- */
+        #login-screen {
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            /* Futuristic AI Background */
+            background: linear-gradient(rgba(15, 23, 42, 0.7), rgba(15, 23, 42, 0.8)), url('https://encrypted-tbn0.gstatic.com/licensed-image?q=tbn:ANd9GcRwEFm2ud9LRtcWidiUiZ7mJfupMWeWSvOoE00gVJgvS5WzL7epwyoBK-DfYwUb4Z7hmItrMpv5vwetg7c') center/cover no-repeat;
+            position: absolute;
+            top: 0; left: 0; z-index: 100;
+            transition: opacity 0.8s ease-in-out, transform 0.8s ease-in-out;
+        }
+
+        .login-box {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px);
+            padding: 3rem;
+            border-radius: 20px;
+            text-align: center;
+            color: white;
+            border: 1px solid rgba(255,255,255,0.2);
+            animation: fadeIn 1s ease-out;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .login-box h1 { margin-top: 0; font-size: 2.5rem; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .login-box input {
+            width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 8px;
+            border: none; outline: none; font-size: 1rem; box-sizing: border-box;
+        }
+        .login-btn {
+            background: var(--primary); color: white; border: none; width: 100%;
+            padding: 12px; border-radius: 8px; font-size: 1.1rem; cursor: pointer;
+            font-weight: bold; transition: all 0.3s;
+        }
+        .login-btn:hover { background: var(--primary-hover); transform: translateY(-2px); }
+
+        /* --- Main Dashboard --- */
+        #dashboard {
+            display: none; /* Hidden until login */
+            max-width: 800px; margin: 0 auto; padding: 2rem;
+            opacity: 0;
+        }
+
+        .header { text-align: center; margin-bottom: 2rem; animation: fadeIn 0.8s ease-out; }
+        .header h1 { color: var(--primary); margin-bottom: 0.5rem; }
+
+        .card {
+            background: var(--card-bg); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            animation: fadeIn 0.6s ease-out backwards;
+        }
+        
+        /* Stagger animations for pipeline cards */
+        #step-1 { animation-delay: 0.2s; }
+        #step-2 { animation-delay: 0.4s; }
+        #step-3 { animation-delay: 0.6s; }
+
+        textarea {
+            width: 100%; padding: 1rem; border: 2px solid #E5E7EB; border-radius: 8px;
+            font-size: 1.1rem; margin-bottom: 1rem; box-sizing: border-box; resize: vertical;
+            transition: border-color 0.3s;
+        }
+        textarea:focus { border-color: var(--primary); outline: none; }
+        
+        .analyze-btn {
+            background-color: var(--primary); color: white; border: none; padding: 1rem 1.5rem;
+            font-size: 1.1rem; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold;
+            transition: all 0.3s; animation: pulseGlow 2s infinite;
+        }
+        .analyze-btn:hover { background-color: var(--primary-hover); }
+
+        .step-title { font-size: 1.2rem; font-weight: bold; color: var(--primary); margin-bottom: 1rem; border-bottom: 2px solid #EEF2FF; padding-bottom: 0.5rem; }
+        .badge { background: #EEF2FF; color: var(--primary); padding: 6px 12px; border-radius: 20px; font-size: 0.9rem; margin: 4px; display: inline-block; font-weight: 500; }
+        
+        .hidden { display: none; }
+
+        /* Results Layout */
+        .result-container { display: flex; gap: 20px; align-items: center; margin-top: 15px; }
+        .result-image { width: 150px; height: 150px; border-radius: 12px; object-fit: cover; box-shadow: 0 4px 6px rgba(0,0,0,0.1); animation: slideInRight 0.8s ease-out; }
+        .result-stats { flex-grow: 1; }
+
+        .progress-container { margin-bottom: 15px; }
+        .progress-label { display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: bold; }
+        .progress-bar { background: #E5E7EB; border-radius: 8px; height: 12px; width: 100%; overflow: hidden; }
+        .progress-fill { height: 100%; border-radius: 8px; animation: fillBar 1s ease-out; }
+    </style>
+</head>
+<body>
+
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen">
+        <div class="login-box">
+            <h1>NLP Portal</h1>
+            <p>Sign in to access the machine learning dashboard.</p>
+            <input type="text" placeholder="Username (demo)" value="admin">
+            <input type="password" placeholder="Password (demo)" value="password">
+            <button class="login-btn" onclick="handleLogin()">Access Dashboard</button>
+        </div>
+    </div>
+
+    <!-- MAIN DASHBOARD -->
+    <div id="dashboard">
+        <div class="header">
+            <h1>News Classification AI</h1>
+            <p>Watch how the algorithm processes and categorizes text in real-time.</p>
+        </div>
+
+        <div class="card">
+            <div class="step-title">Input Text</div>
+            <textarea id="headlineInput" rows="3" placeholder="Paste a news headline here (e.g., 'The stock market crashed today as tech companies announced new AI software...')"></textarea>
+            <button class="analyze-btn" onclick="processText()">Analyze Data Pipeline</button>
+        </div>
+
+        <div id="pipeline" class="hidden">
+            
+            <div class="card" id="step-1">
+                <div class="step-title">Step 1: Text Normalization</div>
+                <div id="tokensContainer"></div>
+            </div>
+
+            <div class="card" id="step-2">
+                <div class="step-title">Step 2: Feature Extraction</div>
+                <div id="featuresContainer"></div>
+            </div>
+
+            <div class="card" id="step-3">
+                <div class="step-title">Step 3: Neural Prediction</div>
+                <div id="predictionContainer"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- Login Animation Logic ---
+        function handleLogin() {
+            const loginScreen = document.getElementById('login-screen');
+            const dashboard = document.getElementById('dashboard');
+            
+            // Slide up and fade out login
+            loginScreen.style.transform = 'translateY(-100vh)';
+            loginScreen.style.opacity = '0';
+            
+            setTimeout(() => {
+                loginScreen.style.display = 'none';
+                dashboard.style.display = 'block';
+                // Trigger dashboard fade in
+                setTimeout(() => { dashboard.style.opacity = '1'; }, 50);
+            }, 800);
+        }
+
+        // --- Machine Learning Mock Logic ---
+        const knowledgeBase = {
+            'Business': { 
+                words: ['stock', 'market', 'economy', 'interest', 'inflation', 'ceo', 'company', 'shares', 'revenue', 'profit'],
+                color: '#10B981', // Green
+                img: 'https://encrypted-tbn0.gstatic.com/licensed-image?q=tbn:ANd9GcQxt-hJLo0BOHkDttK-LJOBq3Bj1OtEIyBTxxP9O28ZSgS21h26WQWZrom7yLf-kgzKAC5OmN6357xdWi0'
+            },
+            'Technology': {
+                words: ['ai', 'software', 'hardware', 'apple', 'google', 'update', 'cybersecurity', 'tech', 'app', 'computer'],
+                color: '#3B82F6', // Blue
+                img: 'https://encrypted-tbn0.gstatic.com/licensed-image?q=tbn:ANd9GcQqpdjJX7z4F_BiRIflgoorgZbEXfbf_1h-NKID0lvffDP5vGwMQ8dwala_ppsBepWNoCpSYXuzqSpEBBg'
+            },
+            'Sports': {
+                words: ['team', 'win', 'championship', 'coach', 'score', 'player', 'league', 'football', 'game', 'tournament'],
+                color: '#F59E0B', // Orange
+                img: 'https://encrypted-tbn3.gstatic.com/licensed-image?q=tbn:ANd9GcQLNAVnr1x_Jnd2e32Ege_QBWYMeVJNstDC_gn43-TKxPoOw9kIL8ZhtZjiBIni9oC3EjvRbTHQ3SL1gB8'
+            }
+        };
+
+        const stopWords = ['the', 'is', 'at', 'which', 'and', 'on', 'a', 'to', 'in', 'of', 'as', 'today', 'new', 'for', 'with'];
+
+        function processText() {
+            const rawText = document.getElementById('headlineInput').value;
+            if (!rawText) return alert("Please enter a headline first!");
+
+            const pipeline = document.getElementById('pipeline');
+            
+            // Reset animations by cloning and replacing the pipeline div
+            const newPipeline = pipeline.cloneNode(true);
+            pipeline.parentNode.replaceChild(newPipeline, pipeline);
+            newPipeline.classList.remove('hidden');
+
+            // 1. Preprocessing
+            const cleanText = rawText.toLowerCase().replace(/[^\w\s]/gi, '');
+            const words = cleanText.split(/\s+/).filter(w => w.length > 0);
+            const tokens = words.filter(word => !stopWords.includes(word));
+            
+            const tokensHtml = tokens.map(t => `<span class="badge">${t}</span>`).join('');
+            document.getElementById('tokensContainer').innerHTML = 
+                `<p style="color: #6B7280; font-size: 0.9rem;">Removed punctuation, converted to lowercase, and dropped stop-words.</p>` +
+                `<div>${tokensHtml || '<span style="color:red">No meaningful words found!</span>'}</div>`;
+
+            // 2. Feature Extraction
+            let scores = { 'Business': 0, 'Technology': 0, 'Sports': 0 };
+            let matchedWords = [];
+
+            tokens.forEach(token => {
+                let matched = false;
+                for (const [category, data] of Object.entries(knowledgeBase)) {
+                    if (data.words.includes(token)) {
+                        scores[category] += 5;
+                        matchedWords.push(`<span class="badge" style="background: ${data.color}20; color: ${data.color}; border: 1px solid ${data.color}40;">${token} (${category})</span>`);
+                        matched = true;
+                    }
+                }
+                if (!matched) {
+                    scores['Business'] += 0.5; scores['Technology'] += 0.5; scores['Sports'] += 0.5; // Base noise
+                }
+            });
+
+            document.getElementById('featuresContainer').innerHTML = 
+                `<p style="color: #6B7280; font-size: 0.9rem;">Mapping tokens to known vocabulary vectors.</p>` + 
+                (matchedWords.length > 0 ? matchedWords.join('') : "No strong category keywords detected. Model is guessing based on noise.");
+
+            // 3. Prediction & UI Generation
+            const totalScore = Object.values(scores).reduce((a, b) => a + b, 0);
+            let predictionHtml = '';
+            let highestCat = 'Business'; // Default fallback
+            let highestScore = -1;
+
+            if (totalScore > 0) {
+                // Find highest
+                for (const [category, score] of Object.entries(scores)) {
+                    if (score > highestScore) {
+                        highestScore = score;
+                        highestCat = category;
+                    }
+                }
+
+                predictionHtml += `<div class="result-container">`;
+                
+                // Add the specific image for the winning category
+                predictionHtml += `<img src="${knowledgeBase[highestCat].img}" alt="${highestCat} concept" class="result-image">`;
+                
+                predictionHtml += `<div class="result-stats">`;
+                predictionHtml += `<h2 style="color:${knowledgeBase[highestCat].color}; margin-top:0;">Predicted: ${highestCat}</h2>`;
+                
+                // Build progress bars
+                for (const [category, score] of Object.entries(scores)) {
+                    const percentage = Math.max(5, Math.round((score / totalScore) * 100)); // Min 5% for visual reasons
+                    const color = knowledgeBase[category].color;
+                    
+                    predictionHtml += `
+                        <div class="progress-container">
+                            <div class="progress-label">
+                                <span>${category}</span>
+                                <span>${percentage}%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${percentage}%; background-color: ${color};"></div>
+                            </div>
+                        </div>
+                    `;
+                }
+                predictionHtml += `</div></div>`;
+            }
+
+            document.getElementById('predictionContainer').innerHTML = predictionHtml;
+        }
+    </script>
+</body>
+</html>
