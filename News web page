@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>News Classification Interactive Concept</title>
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --bg: #F3F4F6;
+            --card: #FFFFFF;
+            --text: #1F2937;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            line-height: 1.6;
+        }
+        h1 { text-align: center; color: var(--primary); }
+        .card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.2s ease;
+        }
+        .card:hover { transform: translateY(-2px); }
+        textarea {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid #E5E7EB;
+            border-radius: 8px;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            box-sizing: border-box;
+            resize: vertical;
+        }
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: bold;
+        }
+        button:hover { background-color: #4338CA; }
+        .step-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .badge {
+            background: #E0E7FF;
+            color: var(--primary);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            margin: 4px;
+            display: inline-block;
+        }
+        .hidden { display: none; }
+        .progress-bar {
+            background: #E5E7EB;
+            border-radius: 8px;
+            height: 20px;
+            width: 100%;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            transition: width 0.5s ease;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>How News Classification Works</h1>
+    <p style="text-align: center; margin-bottom: 2rem;">Type a news headline below to see how a Machine Learning model reads, breaks down, and categorizes text.</p>
+
+    <!-- Input Section -->
+    <div class="card">
+        <div class="step-title">Step 0: The Input</div>
+        <textarea id="headlineInput" rows="3" placeholder="Example: The stock market crashed today as tech companies announced new AI software..."></textarea>
+        <button onclick="processText()">Analyze Headline</button>
+    </div>
+
+    <!-- Output Pipeline (Initially Hidden) -->
+    <div id="pipeline" class="hidden">
+        
+        <!-- Step 1: Preprocessing -->
+        <div class="card">
+            <div class="step-title">Step 1: Text Preprocessing 🧹</div>
+            <p><small>Computers prefer clean text. We convert everything to lowercase, remove punctuation, and drop "stop words" (like 'the', 'is', 'a') that don't add meaning.</small></p>
+            <div id="tokensContainer"></div>
+        </div>
+
+        <!-- Step 2: Feature Extraction -->
+        <div class="card">
+            <div class="step-title">Step 2: Feature Extraction 🔢</div>
+            <p><small>Models can't read text; they read math. We map the remaining words to our known vocabulary to assign them numerical weights.</small></p>
+            <div id="featuresContainer"></div>
+        </div>
+
+        <!-- Step 3: Classification -->
+        <div class="card">
+            <div class="step-title">Step 3: Model Prediction 🎯</div>
+            <p><small>The model multiplies the word weights to calculate probabilities and picks the highest scoring category.</small></p>
+            <div id="predictionContainer"></div>
+        </div>
+
+    </div>
+
+    <script>
+        // Mock Model Vocabulary and Weights
+        const knowledgeBase = {
+            'business': ['stock', 'market', 'economy', 'interest', 'inflation', 'ceo', 'company', 'shares'],
+            'technology': ['ai', 'software', 'hardware', 'apple', 'google', 'update', 'cybersecurity', 'tech'],
+            'sports': ['team', 'win', 'championship', 'coach', 'score', 'player', 'league', 'football']
+        };
+
+        const stopWords = ['the', 'is', 'at', 'which', 'and', 'on', 'a', 'to', 'in', 'of', 'as', 'today', 'new'];
+
+        function processText() {
+            const rawText = document.getElementById('headlineInput').value;
+            if (!rawText) return alert("Please enter a headline first!");
+
+            document.getElementById('pipeline').classList.remove('hidden');
+
+            // --- Step 1: Preprocessing ---
+            // Lowercase and remove punctuation
+            const cleanText = rawText.toLowerCase().replace(/[^\w\s]/gi, '');
+            const words = cleanText.split(/\s+/).filter(w => w.length > 0);
+            
+            // Remove stop words
+            const tokens = words.filter(word => !stopWords.includes(word));
+            
+            const tokensHtml = tokens.map(t => `<span class="badge">${t}</span>`).join('');
+            document.getElementById('tokensContainer').innerHTML = 
+                `<strong>Original:</strong> "${rawText}"<br><br><strong>Cleaned Tokens:</strong> ${tokensHtml || '<span style="color:red">No meaningful words found!</span>'}`;
+
+            // --- Step 2: Feature Extraction & Scoring ---
+            let scores = { 'Business': 0, 'Technology': 0, 'Sports': 0, 'Unknown': 0 };
+            let matchedWords = [];
+
+            tokens.forEach(token => {
+                let matched = false;
+                if (knowledgeBase.business.includes(token)) { scores['Business'] += 3; matchedWords.push(`${token} (+Business)`); matched = true;}
+                if (knowledgeBase.technology.includes(token)) { scores['Technology'] += 3; matchedWords.push(`${token} (+Tech)`); matched = true;}
+                if (knowledgeBase.sports.includes(token)) { scores['Sports'] += 3; matchedWords.push(`${token} (+Sports)`); matched = true;}
+                
+                if (!matched) scores['Unknown'] += 0.5; // Generic words have low weight
+            });
+
+            document.getElementById('featuresContainer').innerHTML = 
+                `<strong>Model identified these weighted keywords:</strong><br>` + 
+                (matchedWords.length > 0 ? matchedWords.map(w => `<span class="badge" style="background:#FEF3C7; color:#B45309;">${w}</span>`).join('') : "No strong category keywords detected.");
+
+            // --- Step 3: Prediction ---
+            const totalScore = Object.values(scores).reduce((a, b) => a + b, 0);
+            let predictionHtml = '';
+            let highestCat = 'Unknown';
+            let highestScore = 0;
+
+            if (totalScore === 0) {
+                predictionHtml = "<p><strong>Result:</strong> Cannot determine category. Need more context.</p>";
+            } else {
+                for (const [category, score] of Object.entries(scores)) {
+                    if (category === 'Unknown') continue;
+                    const percentage = Math.round((score / totalScore) * 100) || 0;
+                    if (score > highestScore) {
+                        highestScore = score;
+                        highestCat = category;
+                    }
+                    
+                    let color = category === 'Business' ? '#10B981' : category === 'Technology' ? '#3B82F6' : '#EF4444';
+                    predictionHtml += `
+                        <div style="margin-top: 10px;">
+                            <div style="display: flex; justify-content: space-between;">
+                                <span>${category}</span>
+                                <span>${percentage}%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${percentage}%; background-color: ${color};"></div>
+                            </div>
+                        </div>
+                    `;
+                }
+                predictionHtml = `<h3 style="color:var(--primary); margin-top:0;">Predicted: ${highestCat}</h3>` + predictionHtml;
+            }
+
+            document.getElementById('predictionContainer').innerHTML = predictionHtml;
+        }
+    </script>
+</body>
+</html>
