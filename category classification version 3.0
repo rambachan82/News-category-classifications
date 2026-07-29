@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Assignment Desk — Story Classifier</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,900;1,600&family=Source+Serif+4:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper: #FFF8E7;
+    --paper-2: #FFEFC6;
+    --ink: #201A2E;
+    --ink-soft: #4A3F63;
+    --meta: #8577A8;
+    --stamp-red: #E8432F;
+    --wire-teal: #00A896;
+    --gold: #F2B705;
+    --violet: #7B3FE4;
+    --pink: #F2437B;
+    --sky: #1D9BF0;
+    --rule: rgba(32,26,46,0.15);
+    --shadow: rgba(32,26,46,0.25);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 8% 4%, rgba(242,183,5,0.35), transparent 38%),
+      radial-gradient(circle at 95% 10%, rgba(29,155,240,0.28), transparent 42%),
+      radial-gradient(circle at 50% 100%, rgba(242,67,123,0.22), transparent 45%),
+      repeating-linear-gradient(0deg, rgba(32,26,46,0.025) 0px, rgba(32,26,46,0.025) 1px, transparent 1px, transparent 3px),
+      var(--paper);
+    color:var(--ink);
+    font-family:'Source Serif 4', Georgia, serif;
+    min-height:100vh;
+    padding:0 0 80px;
+  }
+
+  a{color:inherit;}
+
+  /* ---------- Masthead ---------- */
+  .masthead{
+    max-width:1000px;
+    margin:0 auto;
+    padding:28px 24px 14px;
+    text-align:center;
+    border-bottom:5px solid transparent;
+    border-image:linear-gradient(90deg, var(--stamp-red), var(--gold), var(--wire-teal), var(--sky), var(--violet), var(--pink)) 1;
+  }
+  .masthead .kicker{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.28em;
+    text-transform:uppercase;
+    display:flex;
+    justify-content:space-between;
+    padding-bottom:10px;
+    flex-wrap:wrap;
+    gap:6px;
+  }
+  .masthead .kicker span:nth-child(1){color:var(--stamp-red);}
+  .masthead .kicker span:nth-child(2){color:var(--wire-teal);}
+  .masthead .kicker span:nth-child(3){color:var(--violet);}
+  .masthead h1{
+    font-family:'Playfair Display', serif;
+    font-weight:900;
+    font-size:clamp(38px, 7vw, 68px);
+    margin:2px 0 6px;
+    letter-spacing:.01em;
+    background:linear-gradient(90deg, var(--stamp-red), var(--pink) 30%, var(--violet) 55%, var(--sky) 80%, var(--wire-teal));
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+  }
+  .masthead .sub{
+    font-family:'Source Serif 4', serif;
+    font-style:italic;
+    color:var(--ink-soft);
+    font-size:15px;
+    margin-bottom:10px;
+  }
+
+  .rule-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px;
+    font-weight:700;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    color:var(--wire-teal);
+    padding-top:8px;
+  }
+  .rule-row .line{flex:1;height:2px;background:linear-gradient(90deg, transparent, var(--rule), transparent);}
+
+  /* ---------- Layout ---------- */
+  .desk{
+    max-width:1000px;
+    margin:0 auto;
+    padding:36px 24px 0;
+    display:grid;
+    grid-template-columns:1.15fr 0.85fr;
+    gap:36px;
+  }
+  @media (max-width:760px){
+    .desk{grid-template-columns:1fr;}
+  }
+
+  .column-label{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.22em;
+    text-transform:uppercase;
+    color:var(--stamp-red);
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:12px;
+  }
+  .column-label::before{
+    content:"";
+    width:9px;height:9px;
+    background:radial-gradient(circle, var(--gold), var(--stamp-red));
+    border-radius:50%;
+    display:inline-block;
+  }
+
+  /* ---------- Copy desk (input) ---------- */
+  .copy-desk{
+    background:var(--paper-2);
+    border:2px solid var(--violet);
+    box-shadow:5px 5px 0 rgba(123,63,228,0.18);
+    padding:22px 22px 18px;
+    position:relative;
+  }
+  .copy-desk::before{
+    content:"MS. NO. 41-B";
+    position:absolute;
+    top:10px; right:16px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:9px;
+    letter-spacing:.14em;
+    color:var(--meta);
+  }
+  textarea{
+    width:100%;
+    min-height:280px;
+    resize:vertical;
+    background:transparent;
+    border:none;
+    outline:none;
+    font-family:'Source Serif 4', serif;
+    font-size:16px;
+    line-height:1.65;
+    color:var(--ink);
+    padding-top:6px;
+  }
+  textarea::placeholder{color:#a39c8d; font-style:italic;}
+
+  .desk-tools{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    border-top:1px dashed var(--rule);
+    margin-top:10px;
+    padding-top:12px;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .word-count{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    color:var(--meta);
+  }
+  .tool-buttons{display:flex; gap:10px; flex-wrap:wrap;}
+
+  button{
+    font-family:'JetBrains Mono', monospace;
+    cursor:pointer;
+    border:none;
+  }
+
+  .btn-ghost{
+    background:transparent;
+    border:1px solid var(--wire-teal);
+    color:var(--wire-teal);
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.08em;
+    padding:8px 12px;
+    transition:background .15s ease, color .15s ease;
+  }
+  .btn-ghost:hover{background:var(--wire-teal); color:var(--paper);}
+
+  .btn-stamp{
+    background:linear-gradient(90deg, var(--stamp-red), var(--pink));
+    color:#fff;
+    font-size:13px;
+    font-weight:700;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    padding:14px 26px;
+    width:100%;
+    margin-top:16px;
+    box-shadow:4px 4px 0 rgba(32,26,46,0.2);
+    transition:transform .12s ease, box-shadow .12s ease, background .15s ease;
+    position:relative;
+  }
+  .btn-stamp:hover{background:linear-gradient(90deg, var(--pink), var(--violet));}
+  .btn-stamp:active{transform:translate(2px,2px); box-shadow:2px 2px 0 rgba(32,26,46,0.2);}
+  .btn-stamp:disabled{opacity:.55; cursor:default;}
+
+  /* ---------- Verdict column ---------- */
+  .verdict-box{
+    border:2px solid var(--sky);
+    background:var(--paper-2);
+    box-shadow:5px 5px 0 rgba(29,155,240,0.16);
+    min-height:280px;
+    padding:22px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    position:relative;
+    overflow:hidden;
+  }
+
+  .empty-state{
+    color:var(--meta);
+    font-family:'JetBrains Mono', monospace;
+    font-weight:500;
+    font-size:12px;
+    letter-spacing:.06em;
+    line-height:1.9;
+  }
+  .empty-state .glyph{
+    font-size:30px;
+    display:block;
+    margin-bottom:10px;
+    background:linear-gradient(90deg, var(--gold), var(--pink), var(--sky));
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+  }
+
+  .stamp-wrap{
+    display:none;
+    width:100%;
+  }
+  .stamp-wrap.show{display:block; animation:settle .38s cubic-bezier(.2,1.4,.4,1);}
+
+  @keyframes settle{
+    0%{ transform:scale(2.4) rotate(-14deg); opacity:0; }
+    60%{ transform:scale(0.92) rotate(-4deg); opacity:1; }
+    100%{ transform:scale(1) rotate(-3deg); opacity:1; }
+  }
+
+  .category-stamp{
+    display:inline-block;
+    border:3px solid var(--cat-color, var(--stamp-red));
+    color:var(--cat-color, var(--stamp-red));
+    padding:10px 18px;
+    transform:rotate(-3deg);
+    font-family:'Playfair Display', serif;
+    font-weight:900;
+    font-size:clamp(22px,4vw,30px);
+    letter-spacing:.03em;
+    text-transform:uppercase;
+    position:relative;
+    -webkit-mask-image:
+      radial-gradient(circle at 12% 30%, transparent 1.5px, black 2px),
+      radial-gradient(circle at 80% 70%, transparent 1px, black 1.5px);
+  }
+
+  .filed-under{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px;
+    letter-spacing:.2em;
+    text-transform:uppercase;
+    color:var(--meta);
+    margin-top:16px;
+  }
+
+  .confidence-line{
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    color:var(--ink-soft);
+    margin-top:6px;
+  }
+
+  .ticker{
+    width:100%;
+    margin-top:22px;
+    text-align:left;
+    border-top:1px dashed var(--rule);
+    padding-top:16px;
+  }
+  .ticker-row{
+    display:grid;
+    grid-template-columns:90px 1fr 42px;
+    align-items:center;
+    gap:10px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    padding:5px 0;
+  }
+  .ticker-row .name{color:var(--ink-soft); text-transform:uppercase; letter-spacing:.04em;}
+  .ticker-row .bar-track{
+    height:7px;
+    background:var(--rule);
+    border-radius:4px;
+    position:relative;
+    overflow:hidden;
+  }
+  .ticker-row .bar-fill{
+    height:100%;
+    border-radius:4px;
+    background:var(--cat-color, var(--ink-soft));
+    box-shadow:0 0 6px var(--cat-color, transparent);
+    width:0%;
+    transition:width .5s ease;
+  }
+  .ticker-row .pct{text-align:right; color:var(--ink-soft); font-weight:700;}
+
+  /* ---------- Sample chips ---------- */
+  .samples{
+    margin-top:16px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .chip{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px;
+    font-weight:700;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    padding:6px 10px;
+    background:var(--paper);
+    border:1.5px dashed var(--chip-color, var(--meta));
+    color:var(--chip-color, var(--meta));
+    transition:background .15s ease, color .15s ease;
+  }
+  .chip:hover{background:var(--chip-color, var(--ink)); color:#fff;}
+
+  footer{
+    max-width:1000px;
+    margin:40px auto 0;
+    padding:16px 24px 0;
+    border-top:2px solid var(--gold);
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px;
+    font-weight:700;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--violet);
+    display:flex;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .stamp-wrap.show{animation:none;}
+    .ticker-row .bar-fill{transition:none;}
+  }
+</style>
+</head>
+<body>
+
+  <div class="masthead">
+    <div class="kicker">
+      <span id="today"></span>
+      <span>VOL. I — NO. 1</span>
+      <span>ASSIGNMENT DESK EDITION</span>
+    </div>
+    <h1>The Classifier Gazette</h1>
+    <div class="sub">Drop in a dispatch, and the desk will tell you where it runs.</div>
+    <div class="rule-row"><span class="line"></span><span>Est. for sorting copy by section</span><span class="line"></span></div>
+  </div>
+
+  <div class="desk">
+    <div>
+      <div class="column-label">Submit copy</div>
+      <div class="copy-desk">
+        <textarea id="articleInput" placeholder="Paste or type a news article, headline, or a few sentences here…"></textarea>
+        <div class="desk-tools">
+          <span class="word-count"><span id="wordCount">0</span> words</span>
+          <div class="tool-buttons">
+            <button class="btn-ghost" id="clearBtn">Clear</button>
+          </div>
+        </div>
+      </div>
+      <div class="samples" id="samples"></div>
+      <button class="btn-stamp" id="classifyBtn">Send to the desk</button>
+    </div>
+
+    <div>
+      <div class="column-label">Section assignment</div>
+      <div class="verdict-box" id="verdictBox">
+        <div class="empty-state" id="emptyState">
+          <span class="glyph">—</span>
+          Awaiting copy.<br>The desk sorts stories into Politics, Business,<br>Technology, Sports, Health, Entertainment,<br>Science, and World.
+        </div>
+
+        <div class="stamp-wrap" id="stampWrap">
+          <div class="category-stamp" id="categoryStamp">Politics</div>
+          <div class="filed-under">Filed to section</div>
+          <div class="confidence-line" id="confidenceLine">confidence 0%</div>
+          <div class="ticker" id="ticker"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <span>Keyword-weighted heuristic — not a trained model</span>
+    <span id="clock"></span>
+  </footer>
+
+<script>
+(function(){
+  // ---- Date / clock ----
+  const today = new Date();
+  document.getElementById('today').textContent = today.toLocaleDateString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric'}).toUpperCase();
+  function tickClock(){
+    document.getElementById('clock').textContent = 'Compiled ' + new Date().toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
+  }
+  tickClock();
+  setInterval(tickClock, 30000);
+
+  // ---- Categories, colors, keyword lexicon ----
+  const CATEGORIES = {
+    Politics:      { color:'#E8432F', words:['election','senate','congress','president','government','policy','vote','legislation','minister','parliament','campaign','governor','law','bill','diplomat','republican','democrat','cabinet','referendum','coalition','sanctions','geopolit'] },
+    Business:      { color:'#F2B705', words:['market','stock','economy','trade','company','investor','revenue','profit','shares','ceo','merger','inflation','earnings','startup','ipo','bank','industry','tariff','contract','acquisition','quarterly','nasdaq'] },
+    Technology:    { color:'#00A896', words:['software','app','ai','artificial intelligence','tech','device','startup','chip','robot','internet','cyber','data','algorithm','smartphone','computer','cloud','gadget','launch','update','platform','coding','processor'] },
+    Sports:        { color:'#1D9BF0', words:['match','team','coach','league','championship','goal','tournament','player','score','season','stadium','athlete','olympic','final','win','defeat','draft','injury','referee','medal','cup'] },
+    Health:        { color:'#4FBE3C', words:['health','disease','hospital','patient','doctor','vaccine','treatment','virus','medicine','outbreak','clinical','wellness','mental','nutrition','surgery','diagnosis','pandemic','fda','therapy'] },
+    Entertainment: { color:'#F2437B', words:['film','movie','actor','actress','music','album','concert','celebrity','festival','award','box office','director','singer','tv show','series','premiere','streaming','hollywood','grammy','oscar'] },
+    Science:       { color:'#7B3FE4', words:['research','study','scientist','discovery','space','nasa','experiment','climate','physics','biology','fossil','planet','telescope','laboratory','genome','species','universe','quantum'] },
+    World:         { color:'#D97706', words:['country','nation','border','war','conflict','united nations','refugee','embassy','crisis','earthquake','summit','treaty','ally','military','invasion','ceasefire','humanitarian'] }
+  };
+
+  const SAMPLES = [
+    { label:'Politics sample', color:'#E8432F', text:"The Senate voted late Tuesday to advance the new budget bill after weeks of negotiation between party leaders, with the president expected to sign the legislation before the end of the month." },
+    { label:'Sports sample', color:'#1D9BF0', text:"The home team clinched the championship in overtime last night, as their star forward scored the winning goal in the final minute of the match, sending the stadium into a frenzy." },
+    { label:'Tech sample', color:'#00A896', text:"The startup unveiled its new AI-powered app on Thursday, promising faster data processing through a custom chip designed in-house, with a public launch scheduled for next quarter." },
+    { label:'Health sample', color:'#4FBE3C', text:"Health officials confirmed a new vaccine has shown strong results in clinical trials, offering hope for patients as hospitals report a decline in outbreak-related admissions this month." }
+  ];
+
+  const samplesEl = document.getElementById('samples');
+  SAMPLES.forEach(s => {
+    const b = document.createElement('button');
+    b.className = 'chip';
+    b.textContent = s.label;
+    b.style.setProperty('--chip-color', s.color);
+    b.addEventListener('click', () => {
+      document.getElementById('articleInput').value = s.text;
+      updateWordCount();
+    });
+    samplesEl.appendChild(b);
+  });
+
+  const input = document.getElementById('articleInput');
+  const wordCountEl = document.getElementById('wordCount');
+  function updateWordCount(){
+    const words = input.value.trim().split(/\s+/).filter(Boolean);
+    wordCountEl.textContent = input.value.trim() ? words.length : 0;
+  }
+  input.addEventListener('input', updateWordCount);
+
+  document.getElementById('clearBtn').addEventListener('click', () => {
+    input.value = '';
+    updateWordCount();
+    document.getElementById('stampWrap').classList.remove('show');
+    document.getElementById('emptyState').style.display = 'block';
+  });
+
+  function classify(text){
+    const lower = text.toLowerCase();
+    const scores = {};
+    Object.keys(CATEGORIES).forEach(cat => {
+      let score = 0;
+      CATEGORIES[cat].words.forEach(w => {
+        const re = new RegExp('\\b' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'g');
+        const matches = lower.match(re);
+        if(matches) score += matches.length;
+      });
+      scores[cat] = score;
+    });
+
+    const total = Object.values(scores).reduce((a,b) => a+b, 0);
+    const ranked = Object.entries(scores).sort((a,b) => b[1]-a[1]);
+
+    let percentages;
+    if(total === 0){
+      // No keyword hits — flat low-confidence distribution
+      percentages = ranked.map(([cat]) => [cat, 0]);
+      percentages[0][1] = 0;
+    } else {
+      percentages = ranked.map(([cat, sc]) => [cat, Math.round((sc/total)*100)]);
+    }
+    return percentages;
+  }
+
+  const classifyBtn = document.getElementById('classifyBtn');
+  const stampWrap = document.getElementById('stampWrap');
+  const emptyState = document.getElementById('emptyState');
+  const categoryStamp = document.getElementById('categoryStamp');
+  const confidenceLine = document.getElementById('confidenceLine');
+  const tickerEl = document.getElementById('ticker');
+  const verdictBox = document.getElementById('verdictBox');
+
+  classifyBtn.addEventListener('click', () => {
+    const text = input.value.trim();
+    if(!text){
+      input.focus();
+      input.style.borderBottom = '2px solid var(--stamp-red)';
+      setTimeout(() => input.style.borderBottom = 'none', 900);
+      return;
+    }
+
+    classifyBtn.disabled = true;
+    classifyBtn.textContent = 'Reading copy…';
+    stampWrap.classList.remove('show');
+
+    setTimeout(() => {
+      const results = classify(text);
+      const [topCat, topPct] = results[0];
+      const hasSignal = results.some(([,p]) => p > 0);
+
+      categoryStamp.textContent = hasSignal ? topCat : 'Unclassified';
+      categoryStamp.style.setProperty('--cat-color', hasSignal ? CATEGORIES[topCat].color : '#8C8375');
+      confidenceLine.textContent = hasSignal
+        ? 'confidence ' + topPct + '%  ·  ' + text.trim().split(/\s+/).length + ' words scanned'
+        : 'no strong section keywords found';
+
+      tickerEl.innerHTML = '';
+      results.slice(0, 6).forEach(([cat, pct]) => {
+        const row = document.createElement('div');
+        row.className = 'ticker-row';
+        row.innerHTML = `
+          <div class="name">${cat}</div>
+          <div class="bar-track"><div class="bar-fill" style="--cat-color:${CATEGORIES[cat].color}"></div></div>
+          <div class="pct">${pct}%</div>
+        `;
+        tickerEl.appendChild(row);
+      });
+
+      emptyState.style.display = 'none';
+      stampWrap.classList.add('show');
+
+      requestAnimationFrame(() => {
+        tickerEl.querySelectorAll('.bar-fill').forEach((bar, i) => {
+          bar.style.width = results[i][1] + '%';
+        });
+      });
+
+      classifyBtn.disabled = false;
+      classifyBtn.textContent = 'Send to the desk';
+    }, 450);
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if((e.metaKey || e.ctrlKey) && e.key === 'Enter'){
+      classifyBtn.click();
+    }
+  });
+})();
+</script>
+
+</body>
+</html>
