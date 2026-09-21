@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>The Classifier Gazette</title>
+
+    <style>
+        :root {
+            --paper: #f5ead2;
+            --paper-dark: #e7d5ae;
+            --ink: #1f1b16;
+            --muted: #6f665a;
+            --red: #a52a2a;
+            --red-dark: #751c1c;
+            --blue: #294c60;
+            --green: #456b4d;
+            --white: #fffaf0;
+            --border: #2b241d;
+            --shadow: rgba(40, 30, 20, 0.18);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background:
+                radial-gradient(circle at 20% 20%, rgba(80,50,20,.04) 0 2px, transparent 3px),
+                var(--paper);
+            color: var(--ink);
+            font-family: Georgia, "Times New Roman", serif;
+        }
+
+        .page {
+            max-width: 1200px;
+            margin: auto;
+            padding: 25px;
+        }
+
+        header {
+            border-top: 7px solid var(--ink);
+            border-bottom: 4px solid var(--ink);
+            text-align: center;
+            padding: 20px 10px;
+            margin-bottom: 20px;
+        }
+
+        .date {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: var(--muted);
+        }
+
+        h1 {
+            margin: 5px 0;
+            font-size: clamp(42px, 7vw, 78px);
+            line-height: .9;
+            text-transform: uppercase;
+            letter-spacing: -3px;
+        }
+
+        .tagline {
+            font-style: italic;
+            font-size: 18px;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 1.1fr .9fr;
+            gap: 20px;
+        }
+
+        .card {
+            background: rgba(255,250,240,.7);
+            border: 2px solid var(--border);
+            box-shadow: 5px 5px 0 var(--shadow);
+            padding: 22px;
+        }
+
+        .section-title {
+            font-size: 25px;
+            border-bottom: 2px solid var(--ink);
+            padding-bottom: 8px;
+            margin-top: 0;
+            text-transform: uppercase;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 260px;
+            resize: vertical;
+            padding: 16px;
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 18px;
+            line-height: 1.5;
+            color: var(--ink);
+            background: var(--white);
+            border: 2px solid var(--border);
+            outline: none;
+        }
+
+        textarea:focus {
+            border-color: var(--red);
+        }
+
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 12px 0;
+            gap: 10px;
+        }
+
+        .word-count {
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        button {
+            border: 2px solid var(--border);
+            background: var(--red);
+            color: white;
+            padding: 12px 20px;
+            font-family: Georgia, serif;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 3px 3px 0 var(--border);
+        }
+
+        button:hover {
+            background: var(--red-dark);
+        }
+
+        button:active {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0 var(--border);
+        }
+
+        .samples {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        .sample {
+            background: var(--paper-dark);
+            color: var(--ink);
+            box-shadow: none;
+            font-size: 12px;
+            padding: 9px;
+        }
+
+        .sample:hover {
+            background: #d9c393;
+        }
+
+        .result {
+            display: none;
+        }
+
+        .result.show {
+            display: block;
+        }
+
+        .prediction {
+            text-align: center;
+            padding: 20px;
+            border: 3px double var(--ink);
+            background: var(--white);
+            margin-bottom: 20px;
+        }
+
+        .prediction-label {
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 2px;
+            color: var(--muted);
+        }
+
+        .prediction-category {
+            font-size: 42px;
+            font-weight: bold;
+            margin: 8px 0;
+            color: var(--red);
+        }
+
+        .confidence {
+            font-size: 20px;
+        }
+
+        .score-row {
+            margin: 15px 0;
+        }
+
+        .score-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .bar {
+            height: 18px;
+            background: #d8c8a6;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            width: 0;
+            background: var(--blue);
+            transition: width .5s ease;
+        }
+
+        .score-row:first-child .bar-fill {
+            background: var(--red);
+        }
+
+        .category-grid {
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        .category {
+            border: 1px solid var(--border);
+            padding: 10px;
+            text-align: center;
+            background: var(--paper-dark);
+            font-size: 14px;
+        }
+
+        .category strong {
+            display: block;
+            font-size: 17px;
+        }
+
+        .hint {
+            color: var(--muted);
+            font-size: 13px;
+            margin-top: 10px;
+        }
+
+        footer {
+            border-top: 3px solid var(--ink);
+            margin-top: 25px;
+            padding-top: 12px;
+            text-align: center;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        @media (max-width: 800px) {
+            .layout {
+                grid-template-columns: 1fr;
+            }
+
+            .category-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            h1 {
+                letter-spacing: -1px;
+            }
+        }
+
+        @media (max-width: 500px) {
+            .page {
+                padding: 12px;
+            }
+
+            .toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .samples {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="page">
+
+    <header>
+        <div class="date">The Daily Classification Desk • Newsroom Edition</div>
+        <h1>The Classifier Gazette</h1>
+        <div class="tagline">
+            "Every story deserves the right section."
+        </div>
+    </header>
+
+    <main class="layout">
+
+        <!-- INPUT SECTION -->
+        <section class="card">
+
+            <h2 class="section-title">Assignment Desk</h2>
+
+            <p>
+                Paste a headline, article, or short news blurb below.
+                The desk will determine which newspaper section fits it best.
+            </p>
+
+            <textarea
+                id="newsText"
+                placeholder="Example: Scientists announced a new telescope discovery after observing a distant galaxy..."
+            ></textarea>
+
+            <div class="toolbar">
+
+                <span class="word-count">
+                    Words: <strong id="wordCount">0</strong>
+                </span>
+
+                <button id="classifyBtn">
+                    Send to the Desk
+                </button>
+
+            </div>
+
+            <div class="hint">
+                Shortcut: Ctrl + Enter or Cmd + Enter
+            </div>
+
+            <h3>Try a Sample</h3>
+
+            <div class="samples">
+
+                <button class="sample" data-sample="politics">
+                    Politics
+                </button>
+
+                <button class="sample" data-sample="sports">
+                    Sports
+                </button>
+
+                <button class="sample" data-sample="technology">
+                    Technology
+                </button>
+
+                <button class="sample" data-sample="health">
+                    Health
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <!-- RESULT SECTION -->
+        <section class="card">
+
+            <h2 class="section-title">Editor's Classification</h2>
+
+            <div id="result" class="result">
+
+                <div class="prediction">
+
+                    <div class="prediction-label">
+                        Recommended Newspaper Section
+                    </div>
+
+                    <div
+                        id="predictionCategory"
+                        class="prediction-category"
+                    >
+                        —
+                    </div>
+
+                    <div class="confidence">
+                        Confidence:
+                        <strong id="predictionConfidence">0%</strong>
+                    </div>
+
+                </div>
+
+                <h3>Confidence Breakdown</h3>
+
+                <div id="scores"></div>
+
+            </div>
+
+            <div id="emptyState">
+                <p>
+                    Your classified story will appear here.
+                </p>
+
+                <p>
+                    Enter some news text and click
+                    <strong>Send to the Desk</strong>.
+                </p>
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- CATEGORY INFORMATION -->
+    <section class="card" style="margin-top:20px">
+
+        <h2 class="section-title">The Eight Newspaper Sections</h2>
+
+        <div class="category-grid">
+
+            <div class="category">
+                <strong>Politics</strong>
+                election, senate, vote
+            </div>
+
+            <div class="category">
+                <strong>Business</strong>
+                market, revenue, stock
+            </div>
+
+            <div class="category">
+                <strong>Technology</strong>
+                software, AI, chip
+            </div>
+
+            <div class="category">
+                <strong>Sports</strong>
+                match, goal, athlete
+            </div>
+
+            <div class="category">
+                <strong>Health</strong>
+                vaccine, patient, treatment
+            </div>
+
+            <div class="category">
+                <strong>Entertainment</strong>
+                film, album, celebrity
+            </div>
+
+            <div class="category">
+                <strong>Science</strong>
+                research, NASA, telescope
+            </div>
+
+            <div class="category">
+                <strong>World</strong>
+                border, conflict, treaty
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <footer>
+        The Classifier Gazette • Keyword-Based News Classification Prototype
+    </footer>
+
+</div>
+
+
+<script>
+
+    /*
+     * ==========================================
+     * CATEGORY KEYWORDS
+     * ==========================================
+     */
+
+    const CATEGORIES = {
+
+        Politics: {
+            words: [
+                "election",
+                "senate",
+                "president",
+                "presidential",
+                "legislation",
+                "vote",
+                "voting",
+                "government",
+                "minister",
+                "parliament",
+                "congress",
+                "political",
+                "campaign",
+                "party",
+                "policy",
+                "democracy",
+                "candidate",
+                "cabinet",
+                "law",
+                "bill"
+            ]
+        },
+
+        Business: {
+            words: [
+                "market",
+                "stock",
+                "stocks",
+                "revenue",
+                "merger",
+                "mergers",
+                "ipo",
+                "company",
+                "business",
+                "profit",
+                "economy",
+                "economic",
+                "finance",
+                "financial",
+                "bank",
+                "investment",
+                "investor",
+                "trade",
+                "sales",
+                "corporate",
+                "shares",
+                "earnings"
+            ]
+        },
+
+        Technology: {
+            words: [
+                "software",
+                "technology",
+                "tech",
+                "ai",
+                "artificial",
+                "intelligence",
+                "chip",
+                "chips",
+                "cloud",
+                "algorithm",
+                "computer",
+                "internet",
+                "robot",
+                "robotics",
+                "cyber",
+                "digital",
+                "smartphone",
+                "app",
+                "data",
+                "programming",
+                "processor",
+                "machine",
+                "learning"
+            ]
+        },
+
+        Sports: {
+            words: [
+                "match",
+                "championship",
+                "goal",
+                "athlete",
+                "medal",
+                "football",
+                "soccer",
+                "cricket",
+                "tennis",
+                "basketball",
+                "player",
+                "team",
+                "coach",
+                "tournament",
+                "league",
+                "score",
+                "stadium",
+                "olympic",
+                "olympics",
+                "race",
+                "win",
+                "winner"
+            ]
+        },
+
+        Health: {
+            words: [
+                "vaccine",
+                "hospital",
+                "patient",
+                "outbreak",
+                "treatment",
+                "health",
+                "medical",
+                "medicine",
+                "doctor",
+                "disease",
+                "virus",
+                "cancer",
+                "clinic",
+                "therapy",
+                "symptoms",
+                "diagnosis",
+                "healthcare",
+                "infection",
+                "drug",
+                "surgery",
+                "public health"
+            ]
+        },
+
+        Entertainment: {
+            words: [
+                "film",
+                "movie",
+                "album",
+                "celebrity",
+                "box",
+                "office",
+                "premiere",
+                "actor",
+                "actress",
+                "music",
+                "singer",
+                "concert",
+                "television",
+                "tv",
+                "series",
+                "director",
+                "hollywood",
+                "award",
+                "festival",
+                "streaming",
+                "star"
+            ]
+        },
+
+        Science: {
+            words: [
+                "research",
+                "discovery",
+                "nasa",
+                "telescope",
+                "quantum",
+                "science",
+                "scientist",
+                "experiment",
+                "space",
+                "planet",
+                "galaxy",
+                "physics",
+                "chemistry",
+                "biology",
+                "astronomy",
+                "laboratory",
+                "researchers",
+                "species",
+                "climate",
+                "fossil",
+                "genome"
+            ]
+        },
+
+        World: {
+            words: [
+                "border",
+                "conflict",
+                "treaty",
+                "refugee",
+                "ceasefire",
+                "war",
+                "international",
+                "country",
+                "countries",
+                "foreign",
+                "diplomatic",
+                "diplomacy",
+                "peace",
+                "army",
+                "military",
+                "attack",
+                "nation",
+                "global",
+                "crisis",
+                "embassy",
+                "summit"
+            ]
+        }
+
+    };
+
+
+    /*
+     * ==========================================
+     * SAMPLE ARTICLES
+     * ==========================================
+     */
+
+    const SAMPLES = {
+
+        politics:
+            "The president announced a new legislation package after parliament members voted on the government policy during the election campaign.",
+
+        sports:
+            "The football team won the championship after scoring two goals in an exciting match. The athlete received a gold medal.",
+
+        technology:
+            "A technology company announced a new artificial intelligence chip designed to improve cloud computing and machine learning performance.",
+
+        health:
+            "Doctors at a hospital announced a new treatment after researchers studied patients affected by a viral disease outbreak."
+
+    };
+
+
+    /*
+     * ==========================================
+     * DOM ELEMENTS
+     * ==========================================
+     */
+
+    const newsText =
+        document.getElementById("newsText");
+
+    const wordCount =
+        document.getElementById("wordCount");
+
+    const classifyBtn =
+        document.getElementById("classifyBtn");
+
+    const result =
+        document.getElementById("result");
+
+    const emptyState =
+        document.getElementById("emptyState");
+
+    const predictionCategory =
+        document.getElementById("predictionCategory");
+
+    const predictionConfidence =
+        document.getElementById("predictionConfidence");
+
+    const scoresContainer =
+        document.getElementById("scores");
+
+
+    /*
+     * ==========================================
+     * WORD COUNT
+     * ==========================================
+     */
+
+    function updateWordCount() {
+
+        const text = newsText.value.trim();
+
+        if (!text) {
+            wordCount.textContent = "0";
+            return;
+        }
+
+        const words = text.split(/\s+/);
+
+        wordCount.textContent = words.length;
+    }
+
+
+    newsText.addEventListener(
+        "input",
+        updateWordCount
+    );
+
+
+    /*
+     * ==========================================
+     * TEXT NORMALIZATION
+     * ==========================================
+     */
+
+    function tokenize(text) {
+
+        return text
+            .toLowerCase()
+            .replace(/[^\w\s]/g, " ")
+            .split(/\s+/)
+            .filter(Boolean);
+    }
+
+
+    /*
+     * ==========================================
+     * CLASSIFICATION
+     * ==========================================
+     */
+
+    function classify(text) {
+
+        const words = tokenize(text);
+
+        const scores = {};
+
+        // Initialize scores
+        Object.keys(CATEGORIES).forEach(category => {
+            scores[category] = 0;
+        });
+
+
+        /*
+         * Compare every input word
+         * against every category keyword.
+         */
+
+        Object.entries(CATEGORIES).forEach(
+            ([category, data]) => {
+
+                words.forEach(word => {
+
+                    if (data.words.includes(word)) {
+                        scores[category]++;
+                    }
+
+                });
+
+            }
+        );
+
+
+        /*
+         * Give a small bonus when
+         * important phrases occur.
+         */
+
+        const lowerText = text.toLowerCase();
+
+        if (lowerText.includes("artificial intelligence")) {
+            scores.Technology += 2;
+        }
+
+        if (lowerText.includes("public health")) {
+            scores.Health += 2;
+        }
+
+        if (lowerText.includes("box office")) {
+            scores.Entertainment += 2;
+        }
+
+
+        const total =
+            Object.values(scores)
+                .reduce((sum, value) => sum + value, 0);
+
+
+        /*
+         * If there are no keyword matches,
+         * return an unknown result.
+         */
+
+        if (total === 0) {
+
+            return {
+                category: "Unclassified",
+                confidence: 0,
+                scores: Object.fromEntries(
+                    Object.keys(scores).map(
+                        category => [category, 0]
+                    )
+                )
+            };
+
+        }
+
+
+        /*
+         * Convert scores into percentages.
+         */
+
+        const percentages = {};
+
+        Object.keys(scores).forEach(category => {
+
+            percentages[category] =
+                (scores[category] / total) * 100;
+
+        });
+
+
+        /*
+         * Find highest scoring category.
+         */
+
+        const sorted =
+            Object.entries(percentages)
+                .sort((a, b) => b[1] - a[1]);
+
+
+        return {
+            category: sorted[0][0],
+            confidence: sorted[0][1],
+            scores: percentages
+        };
+
+    }
+
+
+    /*
+     * ==========================================
+     * DISPLAY RESULTS
+     * ==========================================
+     */
+
+    function displayResults(output) {
+
+        result.classList.add("show");
+        emptyState.style.display = "none";
+
+
+        predictionCategory.textContent =
+            output.category;
+
+
+        predictionConfidence.textContent =
+            output.confidence.toFixed(1) + "%";
+
+
+        scoresContainer.innerHTML = "";
+
+
+        const sorted =
+            Object.entries(output.scores)
+                .sort((a, b) => b[1] - a[1]);
+
+
+        sorted.forEach(
+            ([category, percentage]) => {
+
+                const row =
+                    document.createElement("div");
+
+                row.className = "score-row";
+
+
+                const header =
+                    document.createElement("div");
+
+                header.className = "score-header";
+
+
+                const name =
+                    document.createElement("span");
+
+                name.textContent = category;
+
+
+                const value =
+                    document.createElement("span");
+
+                value.textContent =
+                    percentage.toFixed(1) + "%";
+
+
+                header.appendChild(name);
+                header.appendChild(value);
+
+
+                const bar =
+                    document.createElement("div");
+
+                bar.className = "bar";
+
+
+                const fill =
+                    document.createElement("div");
+
+                fill.className = "bar-fill";
+
+                fill.style.width =
+                    percentage + "%";
+
+
+                bar.appendChild(fill);
+
+                row.appendChild(header);
+                row.appendChild(bar);
+
+                scoresContainer.appendChild(row);
+
+            }
+        );
+
+    }
+
+
+    /*
+     * ==========================================
+     * CLASSIFY BUTTON
+     * ==========================================
+     */
+
+    function runClassification() {
+
+        const text = newsText.value.trim();
+
+
+        if (!text) {
+
+            alert(
+                "Please enter a news article or headline."
+            );
+
+            newsText.focus();
+
+            return;
+        }
+
+
+        const output =
+            classify(text);
+
+
+        displayResults(output);
+
+    }
+
+
+    classifyBtn.addEventListener(
+        "click",
+        runClassification
+    );
+
+
+    /*
+     * ==========================================
+     * KEYBOARD SHORTCUT
+     * ==========================================
+     */
+
+    newsText.addEventListener(
+        "keydown",
+        event => {
+
+            if (
+                (event.ctrlKey || event.metaKey) &&
+                event.key === "Enter"
+            ) {
+
+                event.preventDefault();
+
+                runClassification();
+
+            }
+
+        }
+    );
+
+
+    /*
+     * ==========================================
+     * SAMPLE BUTTONS
+     * ==========================================
+     */
+
+    document.querySelectorAll(".sample")
+        .forEach(button => {
+
+            button.addEventListener(
+                "click",
+                () => {
+
+                    const sampleName =
+                        button.dataset.sample;
+
+                    newsText.value =
+                        SAMPLES[sampleName];
+
+                    updateWordCount();
+
+                    runClassification();
+
+                }
+            );
+
+        });
+
+</script>
+
+</body>
+</html>
